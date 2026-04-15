@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block topbar_title %}👤 Students{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Student Risk List</h1>
+    <p class="page-sub">Monitor at-risk students · {{ stats.total }} total enrolled</p>
+  </div>
+  <div style="display:flex;gap:.6rem;align-items:center">
+    <span style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.45rem .9rem;font-size:.8rem;color:var(--text-muted)">{{ stats.total }} students</span>
+    <button class="btn-new-iv" onclick="openAddModal()">👤 Add Student</button>
+  </div>
+</div>
+
+<!-- Risk summary cards -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem">
+  <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:1rem 1.25rem">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+      <span style="color:var(--critical)">⚠</span>
+      <span style="font-size:1.6rem;font-weight:800;color:var(--critical)">{{ stats.critical }}</span>
+    </div>
+    <div style="font-size:.75rem;color:var(--critical);font-weight:600">Critical Risk</div>
+  </div>
+  <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:12px;padding:1rem 1.25rem">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+      <span style="color:var(--high)">⚠</span>
+      <span style="font-size:1.6rem;font-weight:800;color:var(--high)">{{ stats.high }}</span>
+    </div>
+    <div style="font-size:.75rem;color:var(--high);font-weight:600">High Risk</div>
+  </div>
+  <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:1rem 1.25rem">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+      <span style="color:var(--medium)">⚠</span>
+      <span style="font-size:1.6rem;font-weight:800;color:var(--medium)">{{ stats.medium }}</span>
+    </div>
+    <div style="font-size:.75rem;color:var(--medium);font-weight:600">Medium Risk</div>
+  </div>
+  <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:1rem 1.25rem">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+      <span style="color:var(--low)">⚠</span>
+      <span style="font-size:1.6rem;font-weight:800;color:var(--low)">{{ stats.low }}</span>
+    </div>
+    <div style="font-size:.75rem;color:var(--low);font-weight:600">Low Risk</div>
+  </div>
+</div>
+
+<!-- Search + sort -->
+<form method="GET" action="{{ url_for('students') }}" style="display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+  <input type="text" name="q" value="{{ search }}" placeholder="🔍  Search by name, email, or program…" class="search-input" style="flex:1;min-width:260px"/>
+  <select name="sort" class="risk-select" onchange="this.form.submit()">
+    <option value="risk_score" {% if sort=='risk_score' %}selected{% endif %}>Sort: Risk Score</option>
+    <option value="gpa"        {% if sort=='gpa'        %}selected{% endif %}>Sort: GPA</option>
+    <option value="attendance" {% if sort=='attendance' %}selected{% endif %}>Sort: Attendance</option>
+  </select>
+  <button type="submit" class="btn-filter">Search</button>
+</form>
+
+<!-- Filter pill tabs -->
+<div class="filter-tabs">
+  <a href="{{ url_for('students', q=search) }}" class="filter-tab {% if risk_filter=='all' %}active{% endif %}">
+    ● All Students <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ stats.total }}</span>
+  </a>
+  <a href="{{ url_for('students', risk='critical', q=search) }}" class="filter-tab {% if risk_filter=='critical' %}active{% endif %}" style="{% if risk_filter=='critical' %}color:var(--critical);border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08){% endif %}">
+    ● Critical <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ stats.critical }}</span>
+  </a>
+  <a href="{{ url_for('students', risk='high', q=search) }}" class="filter-tab {% if risk_filter=='high' %}active{% endif %}" style="{% if risk_filter=='high' %}color:var(--high);border-color:rgba(249,115,22,.4);background:rgba(249,115,22,.08){% endif %}">
+    ● High <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ stats.high }}</span>
+  </a>
+  <a href="{{ url_for('students', risk='medium', q=search) }}" class="filter-tab {% if risk_filter=='medium' %}active{% endif %}" style="{% if risk_filter=='medium' %}color:var(--medium);border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08){% endif %}">
+    ● Medium <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ stats.medium }}</span>
+  </a>
+  <a href="{{ url_for('students', risk='low', q=search) }}" class="filter-tab {% if risk_filter=='low' %}active{% endif %}" style="{% if risk_filter=='low' %}color:var(--low);border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08){% endif %}">
+    ● Low <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ stats.low }}</span>
+  </a>
+</div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <table class="students-table">
+    <thead>
+      <tr>
+        <th>STUDENT ↕</th>
+        <th>PROGRAM ↕</th>
+        <th>RISK SCORE ↕</th>
+        <th>LEVEL</th>
+        <th>STATUS</th>
+        <th>ACTIONS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
+      <tr class="student-row r-{{ s.risk_color }}">
+        <td>
+          <div class="td-name">
+            <div class="avatar">{{ s.initials }}</div>
+            <div>
+              <div style="font-weight:600;color:var(--text)">{{ s.name }}</div>
+              <div style="font-size:.72rem;color:var(--text-muted)">{{ s.email }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div style="font-size:.82rem;color:var(--text)">{{ s.major }}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">Year {{ s.year }}</div>
+        </td>
+        <td>
+          <div style="display:flex;flex-direction:column;gap:.3rem">
+            <div style="font-size:.68rem;color:var(--text-muted);font-weight:600;letter-spacing:.05em">SCORE</div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <div class="mini-bar-bg" style="width:80px">
+                <div class="mini-bar" style="width:{{ s.risk_score }}%;background:{% if s.risk_color=='critical' %}var(--critical){% elif s.risk_color=='high' %}var(--high){% elif s.risk_color=='medium' %}var(--medium){% else %}var(--low){% endif %}"></div>
+              </div>
+              <span class="td-score {% if s.risk_color=='critical' %}c-red{% elif s.risk_color=='high' %}c-orange{% elif s.risk_color=='medium' %}c-yellow{% else %}c-green{% endif %}">{{ s.risk_score }}</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge badge-{{ s.risk_color }}">● {{ s.risk_level }}</span></td>
+        <td><span style="font-size:.78rem;color:var(--low);font-weight:600">● Active</span></td>
+        <td><a href="{{ url_for('student_detail', sid=s.id) }}" class="btn-view">View →</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="no-results">No students match your filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Add Student Modal ── -->
+<div class="modal-overlay hidden" id="addStudentModal" onclick="if(event.target===this)closeAddModal()">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">Add New Student</div>
+    <form method="POST" action="{{ url_for('add_student_route') }}">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem">
+        <div>
+          <label>FULL NAME</label>
+          <input type="text" name="name" placeholder="e.g. Jane Doe" required/>
+        </div>
+        <div>
+          <label>EMAIL</label>
+          <input type="email" name="email" placeholder="jane@university.edu" required/>
+        </div>
+        <div>
+          <label>AGE</label>
+          <input type="number" name="age" min="16" max="60" value="20" required/>
+        </div>
+        <div>
+          <label>YEAR</label>
+          <select name="year" required>
+            <option value="1">Year 1</option>
+            <option value="2">Year 2</option>
+            <option value="3">Year 3</option>
+            <option value="4">Year 4</option>
+          </select>
+        </div>
+      </div>
+
+      <label>MAJOR / PROGRAM</label>
+      <select name="major" required>
+        <option value="" disabled selected>Select a major…</option>
+        {% for m in majors %}
+        <option value="{{ m }}">{{ m }}</option>
+        {% endfor %}
+      </select>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem">
+        <div>
+          <label>GPA <span style="color:var(--text-muted);font-weight:400">(0.0 – 4.0)</span></label>
+          <input type="number" name="gpa" min="0" max="4" step="0.01" value="2.50" required/>
+        </div>
+        <div>
+          <label>ATTENDANCE <span style="color:var(--text-muted);font-weight:400">(%)</span></label>
+          <input type="number" name="attendance" min="0" max="100" value="70" required/>
+        </div>
+        <div>
+          <label>ASSIGNMENTS DONE <span style="color:var(--text-muted);font-weight:400">(%)</span></label>
+          <input type="number" name="assignments_done" min="0" max="100" value="70" required/>
+        </div>
+        <div>
+          <label>ENGAGEMENT <span style="color:var(--text-muted);font-weight:400">(%)</span></label>
+          <input type="number" name="engagement" min="0" max="100" value="70" required/>
+        </div>
+        <div>
+          <label>FAILED COURSES</label>
+          <input type="number" name="failed_courses" min="0" max="10" value="0" required/>
+        </div>
+        <div>
+          <label>FINANCIAL AID</label>
+          <select name="financial_aid">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:1rem">
+        <button type="button" class="btn-dark" onclick="closeAddModal()">Cancel</button>
+        <button type="submit" class="btn-teal">👤 Add Student</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openAddModal()  { document.getElementById('addStudentModal').classList.remove('hidden'); }
+function closeAddModal() { document.getElementById('addStudentModal').classList.add('hidden'); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeAddModal(); });
+</script>
+{% endblock %}

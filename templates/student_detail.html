@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block topbar_title %}👤 Students{% endblock %}
+{% block content %}
+<div class="detail-page">
+  <div class="detail-topbar">
+    <a href="{{ url_for('students') }}" class="back-link">← Back to Students</a>
+    <div class="prev-next">
+      {% if prev_id %}<a href="{{ url_for('student_detail', sid=prev_id) }}" class="nav-btn">← Prev</a>{% endif %}
+      {% if next_id %}<a href="{{ url_for('student_detail', sid=next_id) }}" class="nav-btn">Next →</a>{% endif %}
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="detail-header dh-{{ s.risk_color }}">
+    <div class="detail-avatar">{{ s.initials }}</div>
+    <div class="detail-info">
+      <h1 class="detail-name">{{ s.name }}</h1>
+      <div class="detail-meta">
+        <span>{{ s.major }}</span><span class="meta-dot">·</span>
+        <span>Age {{ s.age }}</span><span class="meta-dot">·</span>
+        <span>Year {{ s.year }}</span><span class="meta-dot">·</span>
+        {% if s.financial_aid %}<span class="fin-aid">Financial Aid ✓</span>{% else %}<span class="no-aid">No Financial Aid</span>{% endif %}
+        <span class="meta-dot">·</span>
+        <span style="color:var(--text-muted)">{{ s.email }}</span>
+      </div>
+    </div>
+    <div class="detail-risk-wrap">
+      <span class="badge badge-{{ s.risk_color }} badge-lg">● {{ s.risk_level }} Risk</span>
+      <div class="risk-circle rc-{{ s.risk_color }}">
+        <span class="rc-pct {% if s.risk_color=='critical' %}c-red{% elif s.risk_color=='high' %}c-orange{% elif s.risk_color=='medium' %}c-yellow{% else %}c-green{% endif %}">{{ s.risk_score }}%</span>
+        <span class="rc-lbl">RISK SCORE</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <span class="metric-emoji">🎓</span>
+      <span class="metric-val {% if s.gpa < 2.0 %}c-red{% elif s.gpa < 2.5 %}c-orange{% elif s.gpa < 3.0 %}c-yellow{% else %}c-green{% endif %}">{{ "%.2f"|format(s.gpa) }}</span>
+      <span class="metric-lbl">GPA</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-emoji">📅</span>
+      <span class="metric-val {% if s.attendance < 50 %}c-red{% elif s.attendance < 70 %}c-yellow{% else %}c-green{% endif %}">{{ s.attendance }}%</span>
+      <span class="metric-lbl">Attendance</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-emoji">📝</span>
+      <span class="metric-val {% if s.assignments_done < 50 %}c-red{% elif s.assignments_done < 70 %}c-yellow{% else %}c-green{% endif %}">{{ s.assignments_done }}%</span>
+      <span class="metric-lbl">Assignments Done</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-emoji">💡</span>
+      <span class="metric-val {% if s.engagement < 40 %}c-red{% elif s.engagement < 65 %}c-yellow{% else %}c-green{% endif %}">{{ s.engagement }}%</span>
+      <span class="metric-lbl">Engagement</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-emoji">❌</span>
+      <span class="metric-val {% if s.failed_courses >= 3 %}c-red{% elif s.failed_courses >= 1 %}c-yellow{% else %}c-green{% endif %}">{{ s.failed_courses }}</span>
+      <span class="metric-lbl">Failed Courses</span>
+    </div>
+  </div>
+
+  <!-- Two columns -->
+  <div class="detail-cols">
+    <!-- AI Analysis -->
+    <div class="detail-panel">
+      <div class="panel-title"><span class="panel-title-icon">🤖</span> AI Risk Analysis</div>
+      <div class="proba-list">
+        {% for level, pct in s.probabilities.items() %}
+        <div class="proba-row">
+          <span class="proba-name">{{ level }}</span>
+          <div class="proba-track"><div class="proba-fill pf-{{ level|lower }}" style="width:{{ pct }}%"></div></div>
+          <span class="proba-pct">{{ pct }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+      <hr class="fi-divider"/>
+      <div class="fi-subtitle">FEATURE IMPORTANCE</div>
+      <div class="fi-list">
+        {% for f in s.factors %}
+        <div class="fi-row">
+          <div class="fi-top">
+            <span class="fi-name">{{ f.name }}</span>
+            <span class="fi-weight">{{ f.weight }}% weight</span>
+          </div>
+          <div class="fi-track"><div class="fi-fill" style="width:{{ f.weight }}%"></div></div>
+          <span class="fi-val">Value: {{ f.value }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="trend-section">
+        <hr class="fi-divider"/>
+        <div class="fi-subtitle">RISK TREND (LAST 6 WEEKS)</div>
+        <div class="trend-bars">
+          {% for h in s.trend %}
+          <div class="trend-bar" style="height:{{ h }}%;background:{% if h > 70 %}var(--critical){% elif h > 50 %}var(--high){% elif h > 30 %}var(--medium){% else %}var(--low){% endif %}"></div>
+          {% endfor %}
+        </div>
+        <div class="trend-labels">
+          {% for lbl in ['W1','W2','W3','W4','W5','W6'] %}
+          <span class="trend-lbl">{{ lbl }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Interventions -->
+    <div class="detail-panel">
+      <div class="panel-title"><span class="panel-title-icon">🎯</span> Advisor Interventions</div>
+      {% if s_ivs %}
+      <div class="iv-list">
+        {% for iv in s_ivs %}
+        <div class="iv-card">
+          <div class="iv-header">
+            <span class="iv-advisor">{{ iv.type_info.icon }} {{ iv.type_info.label }}</span>
+            <span class="badge {% if iv.status=='resolved' %}badge-resolved{% elif iv.status=='active' %}badge-active{% else %}badge-pending{% endif %}">{{ iv.status|capitalize }}</span>
+          </div>
+          <p class="iv-note">{{ iv.description }}</p>
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ iv.created }} · {{ iv.advisor }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="no-iv"><span class="no-iv-icon">✅</span><p>No interventions recorded. Student is being monitored.</p></div>
+      {% endif %}
+
+      <a href="{{ url_for('interventions') }}" class="btn-add-iv" style="display:flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none">+ Log New Intervention</a>
+
+      <div class="rec-box rec-{{ s.risk_color }}">
+        <div class="rec-title">Recommendation</div>
+        {% if s.risk_level == "Critical" %}
+          <p>Immediate intervention required. Schedule an urgent meeting and notify the academic board. Consider emergency financial and counseling support.</p>
+        {% elif s.risk_level == "High" %}
+          <p>Schedule an advisor meeting within the week. Consider tutoring referral, counseling support, and review of course load.</p>
+        {% elif s.risk_level == "Medium" %}
+          <p>Monitor closely. Send an engagement check-in email and review attendance patterns. Offer optional tutoring sessions.</p>
+        {% else %}
+          <p>Student is on track. Continue regular monitoring and positive reinforcement. No immediate action required.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

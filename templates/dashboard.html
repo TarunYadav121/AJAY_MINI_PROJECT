@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block topbar_title %}⊞ Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Academic Risk Monitor</h1>
+    <p class="page-sub">Student dropout prediction &amp; intervention tracking</p>
+  </div>
+  <a href="{{ url_for('students') }}" class="btn-new-iv" style="text-decoration:none">👤 View All Students</a>
+</div>
+
+<!-- 4 stat cards -->
+<div class="stats-grid">
+  <div class="stat-box">
+    <div class="stat-box-label">Total Students</div>
+    <div class="stat-box-value" style="color:var(--teal)">{{ stats.total }}</div>
+    <div class="stat-box-sub">Enrolled &amp; monitored</div>
+  </div>
+  <div class="stat-box sb-high">
+    <div class="stat-box-label">At-Risk Students</div>
+    <div class="stat-box-value">{{ stats.critical + stats.high }}</div>
+    <div class="stat-box-sub">+{{ ((stats.critical + stats.high) / stats.total * 100)|round|int }}% of total &nbsp; Require attention</div>
+  </div>
+  <div class="stat-box sb-teal">
+    <div class="stat-box-label">Active Interventions</div>
+    <div class="stat-box-value">{{ active_iv }}</div>
+    <div class="stat-box-sub">{{ resolved_iv }} resolved</div>
+  </div>
+  <div class="stat-box sb-critical">
+    <div class="stat-box-label">Critical Cases</div>
+    <div class="stat-box-value">{{ stats.critical }}</div>
+    <div class="stat-box-sub">Immediate action needed</div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="charts-row">
+  <!-- Donut chart -->
+  <div class="chart-panel">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.25rem">
+      <div>
+        <div class="chart-panel-title" style="color:var(--critical);margin-bottom:.1rem">Risk Distribution</div>
+        <div style="font-size:.75rem;color:var(--text-muted)">Current semester breakdown</div>
+      </div>
+      <span style="color:var(--text-muted);font-size:.9rem">↗</span>
+    </div>
+    <div class="chart-wrap" style="max-width:220px;margin:1rem auto 0">
+      <canvas id="donutChart" height="220"></canvas>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:1rem">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:.5rem .75rem;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.78rem;color:var(--critical);font-weight:600">Critical</span>
+        <span style="font-size:1rem;font-weight:800;color:var(--critical)">{{ stats.critical }}</span>
+      </div>
+      <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:8px;padding:.5rem .75rem;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.78rem;color:var(--high);font-weight:600">High</span>
+        <span style="font-size:1rem;font-weight:800;color:var(--high)">{{ stats.high }}</span>
+      </div>
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:.5rem .75rem;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.78rem;color:var(--medium);font-weight:600">Medium</span>
+        <span style="font-size:1rem;font-weight:800;color:var(--medium)">{{ stats.medium }}</span>
+      </div>
+      <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:.5rem .75rem;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.78rem;color:var(--low);font-weight:600">Low</span>
+        <span style="font-size:1rem;font-weight:800;color:var(--low)">{{ stats.low }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line chart -->
+  <div class="chart-panel">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.25rem">
+      <div>
+        <div class="chart-panel-title" style="color:var(--teal);margin-bottom:.1rem">Risk Trend</div>
+        <div style="font-size:.75rem;color:var(--text-muted)">6-month rolling overview by risk level</div>
+      </div>
+      <span style="color:var(--text-muted);font-size:.9rem">⚡</span>
+    </div>
+    <div class="chart-wrap" style="margin-top:.75rem">
+      <canvas id="lineChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent at-risk students table -->
+<div class="panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <div>
+      <div style="font-size:.88rem;font-weight:700;color:var(--text)">Recent At-Risk Students</div>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:.15rem">Top 8 students by risk score requiring intervention</div>
+    </div>
+    <a href="{{ url_for('students') }}" style="font-size:.8rem;color:var(--teal);font-weight:600">View all →</a>
+  </div>
+  <div class="table-wrap" style="border-radius:10px">
+    <table class="students-table">
+      <thead>
+        <tr>
+          <th>STUDENT</th>
+          <th>PROGRAM</th>
+          <th>YEAR</th>
+          <th>RISK SCORE</th>
+          <th>RISK LEVEL</th>
+          <th>STATUS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in top8 %}
+        <tr class="student-row r-{{ s.risk_color }}" style="cursor:pointer" onclick="window.location='{{ url_for('student_detail', sid=s.id) }}'">
+          <td>
+            <div class="td-name">
+              <div class="avatar">{{ s.initials }}</div>
+              <span>{{ s.name }}</span>
+            </div>
+          </td>
+          <td style="color:var(--text-muted);font-size:.82rem">{{ s.major }}</td>
+          <td style="color:var(--text-muted);font-size:.82rem">Yr {{ s.year }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span class="td-score {% if s.risk_color=='critical' %}c-red{% elif s.risk_color=='high' %}c-orange{% elif s.risk_color=='medium' %}c-yellow{% else %}c-green{% endif %}">{{ s.risk_score }}%</span>
+              <div class="mini-bar-bg" style="width:80px">
+                <div class="mini-bar" style="width:{{ s.risk_score }}%;background:{% if s.risk_color=='critical' %}var(--critical){% elif s.risk_color=='high' %}var(--high){% elif s.risk_color=='medium' %}var(--medium){% else %}var(--low){% endif %}"></div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge badge-{{ s.risk_color }}">● {{ s.risk_level }}</span></td>
+          <td><span style="font-size:.78rem;color:var(--low);font-weight:600">● Active</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const months   = {{ months|safe }};
+const lineData = {{ line_data|safe }};
+const donut    = {{ donut|safe }};
+
+// Donut chart
+new Chart(document.getElementById('donutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Critical','High','Medium','Low'],
+    datasets: [{
+      data: donut,
+      backgroundColor: ['#ef4444','#f97316','#f59e0b','#22c55e'],
+      borderWidth: 0,
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    cutout: '68%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#7d8fa8',
+          font: { size: 11, family: 'Inter' },
+          padding: 12,
+          usePointStyle: true,
+          pointStyleWidth: 8,
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.parsed} students`
+        }
+      }
+    }
+  }
+});
+
+// Line chart
+new Chart(document.getElementById('lineChart'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'critical', data: lineData.critical, borderColor: '#ef4444', backgroundColor: 'transparent', tension: .4, pointRadius: 3, borderWidth: 2 },
+      { label: 'high',     data: lineData.high,     borderColor: '#f97316', backgroundColor: 'transparent', tension: .4, pointRadius: 3, borderWidth: 2 },
+      { label: 'medium',   data: lineData.medium,   borderColor: '#f59e0b', backgroundColor: 'transparent', tension: .4, pointRadius: 3, borderWidth: 2 },
+      { label: 'low',      data: lineData.low,      borderColor: '#22c55e', backgroundColor: 'transparent', tension: .4, pointRadius: 3, borderWidth: 2 },
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: { grid: { color: 'rgba(42,53,80,.5)' }, ticks: { color: '#7d8fa8', font: { size: 11 } } },
+      y: { grid: { color: 'rgba(42,53,80,.5)' }, ticks: { color: '#7d8fa8', font: { size: 11 } }, beginAtZero: true }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#7d8fa8', font: { size: 11, family: 'Inter' }, padding: 14, usePointStyle: true }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

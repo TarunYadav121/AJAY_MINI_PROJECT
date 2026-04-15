@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EduRisk Monitor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+</head>
+<body class="no-sidebar">
+<div class="landing">
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="badge-pulse"></span>
+      AI-POWERED DROPOUT RISK PREDICTION
+    </div>
+    <h1 class="hero-title">EduRisk Monitor</h1>
+    <p class="hero-subtitle">
+      Identify at-risk students early. Monitor attendance, academic performance,
+      and engagement to prevent dropout.
+    </p>
+    <div class="hero-stats">
+      <div class="stat-card"><span class="stat-number">40+</span><span class="stat-label">STUDENTS</span></div>
+      <div class="stat-card"><span class="stat-number">94%</span><span class="stat-label">DETECTION RATE</span></div>
+      <div class="stat-card"><span class="stat-number">4</span><span class="stat-label">RISK LEVELS</span></div>
+    </div>
+    <div class="login-card">
+      <p class="login-title">Secure institutional access</p>
+      <p class="login-sub">Sign in to access the student monitoring dashboard</p>
+      <form action="{{ url_for('login') }}" method="POST">
+        <button type="submit" class="btn-signin">🔐 Sign in with Internet Identity</button>
+      </form>
+      <p class="login-note">🔒 Decentralized authentication — no passwords, no data leaks</p>
+    </div>
+  </section>
+  <section class="features">
+    <div class="feature-card">
+      <div class="feature-icon-wrap">📊</div>
+      <div><h3>Predictive Analytics</h3><p>AI risk scoring powered by machine learning on attendance, GPA, and engagement data.</p></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon-wrap">🎯</div>
+      <div><h3>Intervention Tracking</h3><p>Manage and log advisor interventions for at-risk students in real time.</p></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon-wrap">📡</div>
+      <div><h3>Real-time Monitoring</h3><p>Live student data with instant risk level updates across all enrolled students.</p></div>
+    </div>
+  </section>
+</div>
+<footer style="text-align:center;padding:1.5rem;color:#7d8fa8;font-size:.78rem;border-top:1px solid #2a3550;margin-top:2rem">
+  © 2026 EduRisk Monitor — AI-Powered Dropout Risk Prediction
+</footer>
+</body>
+</html>

@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block topbar_title %}🛡 Interventions{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Interventions</h1>
+    <p class="page-sub">Track and manage academic support interventions for at-risk students</p>
+  </div>
+  <button class="btn-new-iv" onclick="openModal()">+ New Intervention</button>
+</div>
+
+<!-- 4 stat cards -->
+<div class="interventions-grid" style="margin-bottom:1.5rem">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem">
+    <div style="width:38px;height:38px;background:var(--teal-dim);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--teal)">⚡</div>
+    <div>
+      <div style="font-size:1.4rem;font-weight:800;color:var(--text)">{{ counts.total }}</div>
+      <div style="font-size:.72rem;color:var(--text-muted)">Total Interventions</div>
+    </div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem">
+    <div style="width:38px;height:38px;background:var(--teal-dim);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--teal)">⚡</div>
+    <div>
+      <div style="font-size:1.4rem;font-weight:800;color:var(--teal)">{{ counts.active }}</div>
+      <div style="font-size:.72rem;color:var(--text-muted)">Active</div>
+    </div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem">
+    <div style="width:38px;height:38px;background:rgba(245,158,11,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--medium)">🕐</div>
+    <div>
+      <div style="font-size:1.4rem;font-weight:800;color:var(--medium)">{{ counts.pending }}</div>
+      <div style="font-size:.72rem;color:var(--text-muted)">Pending</div>
+    </div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem">
+    <div style="width:38px;height:38px;background:rgba(34,197,94,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--low)">✅</div>
+    <div>
+      <div style="font-size:1.4rem;font-weight:800;color:var(--low)">{{ counts.resolved }}</div>
+      <div style="font-size:.72rem;color:var(--text-muted)">Resolved</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter tabs -->
+<div class="filter-tabs" style="margin-bottom:1.25rem">
+  <a href="{{ url_for('interventions') }}" class="filter-tab {% if status_filter=='all' %}active{% endif %}">
+    All <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ counts.total }}</span>
+  </a>
+  <a href="{{ url_for('interventions', status='pending') }}" class="filter-tab {% if status_filter=='pending' %}active{% endif %}">
+    Pending <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ counts.pending }}</span>
+  </a>
+  <a href="{{ url_for('interventions', status='active') }}" class="filter-tab {% if status_filter=='active' %}active{% endif %}">
+    Active <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ counts.active }}</span>
+  </a>
+  <a href="{{ url_for('interventions', status='resolved') }}" class="filter-tab {% if status_filter=='resolved' %}active{% endif %}">
+    Resolved <span style="background:var(--bg4);border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.3rem">{{ counts.resolved }}</span>
+  </a>
+</div>
+
+<!-- Intervention cards -->
+<div class="iv-cards">
+  {% for iv in ivs %}
+  <div class="iv-card iv-{{ iv.status }}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+        {% if iv.student %}
+          <a href="{{ url_for('student_detail', sid=iv.student.id) }}" style="font-size:.9rem;font-weight:700;color:var(--teal)">{{ iv.student.name }}</a>
+        {% else %}
+          <span style="font-size:.9rem;font-weight:700;color:var(--text-muted)">Unknown Student</span>
+        {% endif %}
+        <span class="badge badge-{{ iv.student_risk_color }}">● {{ iv.student_risk }}</span>
+      </div>
+      <span class="badge {% if iv.status=='resolved' %}badge-resolved{% elif iv.status=='active' %}badge-active{% else %}badge-pending{% endif %}" style="font-size:.72rem;padding:.25rem .65rem;border-radius:6px;text-transform:capitalize">
+        {{ iv.status|capitalize }}
+      </span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:.75rem;margin:.6rem 0;flex-wrap:wrap">
+      <span style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.22rem .6rem;font-size:.75rem;font-weight:600;color:var(--text)">
+        {{ iv.type_info.icon }} {{ iv.type_info.label }}
+      </span>
+      <span style="font-size:.75rem;color:var(--text-muted)">🕐 Created {{ iv.created }}</span>
+      {% if iv.status == 'resolved' %}
+        <span style="font-size:.75rem;color:var(--low)">✅ Resolved {{ iv.created }}</span>
+      {% endif %}
+    </div>
+
+    <p style="font-size:.83rem;color:var(--text-muted);line-height:1.6;margin-bottom:.6rem">{{ iv.description }}</p>
+    <div style="font-size:.75rem;color:var(--text-muted);font-family:monospace;margin-bottom:.75rem">Advisor: {{ iv.advisor }}</div>
+
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      {% if iv.status == 'active' %}
+        <form method="POST" action="{{ url_for('update_iv_status', iv_id=iv.id) }}" style="display:inline">
+          <input type="hidden" name="status" value="resolved"/>
+          <button type="submit" class="btn-resolve">✅ Mark Resolved</button>
+        </form>
+      {% elif iv.status == 'pending' %}
+        <form method="POST" action="{{ url_for('update_iv_status', iv_id=iv.id) }}" style="display:inline">
+          <input type="hidden" name="status" value="active"/>
+          <button type="submit" class="btn-activate">⚡ Mark Active</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:3rem;color:var(--text-muted);font-size:.9rem">
+    No interventions found for this filter.
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── New Intervention Modal ── -->
+<div class="modal-overlay hidden" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">New Intervention</div>
+    <form method="POST" action="{{ url_for('create_intervention') }}">
+
+      <label>STUDENT</label>
+      <select name="student_id" required>
+        <option value="" disabled selected>Select a student…</option>
+        {% for s in students %}
+        <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+
+      <label>INTERVENTION TYPE</label>
+      <select name="type" required id="typeSelect">
+        <option value="" disabled selected>Select type…</option>
+        {% for t in intervention_types %}
+        <option value="{{ t.id }}">{{ t.icon }} {{ t.label }}</option>
+        {% endfor %}
+      </select>
+
+      <label>DESCRIPTION</label>
+      <textarea name="description" placeholder="Describe the intervention plan, goals, and next steps…" rows="4" required></textarea>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-dark" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn-teal">+ Create Intervention</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal()  { document.getElementById('modalOverlay').classList.remove('hidden'); }
+function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+</script>
+{% endblock %}
